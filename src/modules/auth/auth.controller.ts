@@ -15,7 +15,6 @@ import { SkipAuth } from './decorators/skip-auth.decorator';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { SingInRequestDto } from './models/dto/request/sing-in.request.dto';
 import { SingUpRequestDto } from './models/dto/request/sing-up.request.dto';
-import { SingUpAdminRequestDto } from './models/dto/request/sing-up-admin.request.dto';
 import { AuthUserResponseDto } from './models/dto/response/auth-user.response.dto';
 import { TokenResponseDto } from './models/dto/response/token.response.dto';
 import { AuthService } from './services/auth.service';
@@ -25,21 +24,6 @@ import { IUserData } from './types/user-data.type';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
-
-  @SkipAuth()
-  @ApiOperation({ summary: 'Registration ADMIN' })
-  @ApiResponse({ status: 201 })
-  @ApiBadRequestResponse({
-    status: 400,
-    description: 'Wrong request parameters',
-  })
-  @ApiConflictResponse({ description: 'ADMIN already exist' })
-  @Post('sign-up/admin')
-  public async signUpAdmin(
-    @Body() dto: SingUpAdminRequestDto,
-  ): Promise<Partial<AuthUserResponseDto>> {
-    return await this.authService.signUpAdmin(dto);
-  }
 
   @SkipAuth()
   @ApiOperation({ summary: 'Registration user' })

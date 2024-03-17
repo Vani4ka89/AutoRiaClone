@@ -1,11 +1,11 @@
 import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 
-import { IUserData } from '../auth/types/user-data.type';
-import { AccountTypeRepository } from '../repository/services/account-type.repository';
-import { UserService } from '../user/services/user.service';
-import { CreateAccountTypeRequestDto } from './dto/create-account-type.request.dto';
-import { AccountTypeResponseDto } from './models/dto/response/account-type.response.dto';
-import { AccountTypeMapper } from './services/account-type.mapper';
+import { IUserData } from '../../auth/types/user-data.type';
+import { AccountTypeRepository } from '../../repository/services/account-type.repository';
+import { UserService } from '../../user/services/user.service';
+import { CreateAccountTypeRequestDto } from '../models/dto/request/create-account-type.request.dto';
+import { AccountTypeResponseDto } from '../models/dto/response/account-type.response.dto';
+import { AccountTypeMapper } from './account-type.mapper';
 
 @Injectable()
 export class AccountTypeService {

@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsString } from 'class-validator';
 
-import { EAccountType } from '../enums/account-type.enum';
+import { EAccountType } from '../../../enums/account-type.enum';
 
 export class CreateAccountTypeRequestDto {
   @ApiProperty()

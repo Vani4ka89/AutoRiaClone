@@ -3,8 +3,8 @@ import { ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { IUserData } from '../auth/types/user-data.type';
-import { AccountTypeService } from './account_type.service';
-import { CreateAccountTypeRequestDto } from './dto/create-account-type.request.dto';
+import { AccountTypeService } from './services/account_type.service';
+import { CreateAccountTypeRequestDto } from './models/dto/request/create-account-type.request.dto';
 import { AccountTypeResponseDto } from './models/dto/response/account-type.response.dto';
 
 @ApiTags('Account-type')

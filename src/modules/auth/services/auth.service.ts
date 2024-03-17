@@ -6,12 +6,10 @@ import { config } from 'dotenv';
 
 import { UserEntity } from '../../../database/entities/user.entity';
 import { RefreshTokenRepository } from '../../repository/services/refresh-token.repository';
-import { RoleRepository } from '../../repository/services/role.repository';
 import { UserRepository } from '../../repository/services/user.repository';
 import { UserService } from '../../user/services/user.service';
 import { SingInRequestDto } from '../models/dto/request/sing-in.request.dto';
 import { SingUpRequestDto } from '../models/dto/request/sing-up.request.dto';
-import { SingUpAdminRequestDto } from '../models/dto/request/sing-up-admin.request.dto';
 import { AuthUserResponseDto } from '../models/dto/response/auth-user.response.dto';
 import { TokenResponseDto } from '../models/dto/response/token.response.dto';
 import { ITokenPair } from '../types/token.type';
@@ -30,18 +28,7 @@ export class AuthService {
     private readonly tokenService: TokenService,
     private readonly refreshTokenRepository: RefreshTokenRepository,
     private readonly authCacheService: AuthCacheService,
-    private readonly roleRepository: RoleRepository,
   ) {}
-
-  public async signUpAdmin(
-    dto: SingUpAdminRequestDto,
-  ): Promise<Partial<AuthUserResponseDto>> {
-    await this.userService.isEmailUniqueOrThrow(dto.email);
-    const password = await bcrypt.hash(dto.password, +process.env.SECRET_SALT);
-    const user = await this.userRepository.save(
-      this.userRepository.create({ ...dto, password }),
-    );
-  }
 
   public async signUp(
     dto: SingUpRequestDto,

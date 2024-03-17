@@ -22,7 +22,6 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { SkipAuth } from '../auth/decorators/skip-auth.decorator';
 import { ERole } from '../auth/enums/roles.enum';
 import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
 import { IUserData } from '../auth/types/user-data.type';
 import { AddRoleRequestDto } from './models/dto/request/add-role.request.dto';
 import { BanUserRequestDto } from './models/dto/request/ban-user.request.dto';
@@ -93,7 +92,7 @@ export class UserController {
   @ApiOperation({ summary: 'Ban a user' })
   @ApiResponse({ status: 200 })
   @Roles(ERole.BUYER)
-  @UseGuards(JwtAccessGuard, RolesGuard)
+  @UseGuards(JwtAccessGuard)
   @Post('users/ban')
   public async ban(@Body() dto: BanUserRequestDto): Promise<UserEntity> {
     return await this.userService.banUser(dto);

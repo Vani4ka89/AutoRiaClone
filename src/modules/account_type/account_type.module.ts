@@ -3,7 +3,7 @@ import { forwardRef, Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { UserModule } from '../user/user.module';
 import { AccountTypeController } from './account_type.controller';
-import { AccountTypeService } from './account_type.service';
+import { AccountTypeService } from './services/account_type.service';
 
 @Module({
   imports: [forwardRef(() => UserModule), forwardRef(() => AuthModule)],
