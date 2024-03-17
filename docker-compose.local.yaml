@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  db.postgres:
+    image: postgres:16-alpine
+    env_file:
+      - environments/.env
+    ports:
+      - '${POSTGRES_PORT}:5432'
+    volumes:
+      - ./postgres.db:/var/lib/postgresql/data
+    restart: on-failure
+
+  march2024-redis:
+      image: redis:alpine
+      ports:
+        - '${REDIS_PORT}:6379'
+      command: sh -c "redis-server --requirepass '${REDIS_PASSWORD}'"
+      restart: on-failure
+
+  march2024-s3:
+      image: quay.io/minio/minio:latest
+      command: server /data --console-address ":9001"
+      restart: on-failure
+      ports:
+        - "7002:9000"
+        - "7001:9001"
+      volumes:
+        - ./march2024-api-s3:/usr/src/app/s3
+      env_file:
+        - environments/.env
+
+volumes:
+    march2024-api-db:
+    march2024-api-s3:
