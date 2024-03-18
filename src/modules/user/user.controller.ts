@@ -16,12 +16,12 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { UserEntity } from '../../database/entities/user.entity';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { SkipAuth } from '../auth/decorators/skip-auth.decorator';
-import { ERole } from '../auth/enums/roles.enum';
+import { ERoleAll } from '../auth/enums/roles.enum';
 import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import { IUserData } from '../auth/types/user-data.type';
 import { AddRoleRequestDto } from './models/dto/request/add-role.request.dto';
 import { BanUserRequestDto } from './models/dto/request/ban-user.request.dto';
@@ -35,6 +35,10 @@ import { UserService } from './services/user.service';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create user (can only admin)' })
+  @Roles(ERoleAll.ADMIN)
+  @UseGuards(RolesGuard)
   @Post('users')
   public async createUser(
     @Body() dto: CreateUserRequestDto,
@@ -43,6 +47,7 @@ export class UserController {
   }
 
   @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get my profile' })
   @Get('me')
   public async getMyProfile(
     @CurrentUser() userData: IUserData,
@@ -51,6 +56,7 @@ export class UserController {
   }
 
   @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update my profile' })
   @Put('me')
   public async updateMyProfile(
     @CurrentUser() userData: IUserData,
@@ -59,27 +65,40 @@ export class UserController {
     return await this.userService.updateMyProfile(userData, dto);
   }
 
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete my profile' })
+  @Delete('me')
+  public async deleteMyProfile(
+    @CurrentUser() userData: IUserData,
+  ): Promise<void> {
+    await this.userService.deleteMyProfile(userData);
+  }
+
+  @ApiOperation({ summary: 'Public profile' })
   @SkipAuth()
   @Get('users/:userId')
   public async getProfileById(
     @Param('userId', ParseUUIDPipe) userId: string,
-  ): Promise<UserEntity> {
+  ): Promise<UserResponseDto> {
     return await this.userService.getProfileById(userId);
   }
 
   @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete profile (can only admin)' })
+  @Roles(ERoleAll.ADMIN)
+  @UseGuards(RolesGuard)
   @Delete('users/:userId')
   public async deleteProfile(@Param('userId') userId: string): Promise<void> {
     await this.userService.deleteProfile(userId);
   }
-  /////////////////////////////////////////////////////
 
-  @SkipAuth()
-  // @ApiBearerAuth()
-  @ApiOperation({ summary: 'Give a role' })
+  //////////////////////////// GIVE A ROLE //////////////////////////////////
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Give a role (can only admin)' })
   @ApiResponse({ status: 200 })
-  // @Roles(ERole.ADMIN)
-  // @UseGuards(JwtAccessGuard, RolesGuard)
+  @Roles(ERoleAll.ADMIN)
+  @UseGuards(JwtAccessGuard, RolesGuard)
   @Post('users/role')
   public async addRole(
     @Body() dto: AddRoleRequestDto,
@@ -87,14 +106,29 @@ export class UserController {
     return await this.userService.addRole(dto);
   }
 
+  /////////////////////// BAN A USER AND UNBAN ///////////////////////////
+
   @ApiBearerAuth()
-  // @SkipAuth()
-  @ApiOperation({ summary: 'Ban a user' })
+  @ApiOperation({ summary: 'Ban a user (can only admin and manager)' })
   @ApiResponse({ status: 200 })
-  @Roles(ERole.BUYER)
-  @UseGuards(JwtAccessGuard)
+  @Roles(ERoleAll.ADMIN, ERoleAll.MANAGER)
+  @UseGuards(RolesGuard)
   @Post('users/ban')
-  public async ban(@Body() dto: BanUserRequestDto): Promise<UserEntity> {
+  public async banUser(
+    @Body() dto: BanUserRequestDto,
+  ): Promise<UserResponseDto> {
     return await this.userService.banUser(dto);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Unban a user (can only admin and manager)' })
+  @ApiResponse({ status: 200 })
+  @Roles(ERoleAll.ADMIN, ERoleAll.MANAGER)
+  @UseGuards(RolesGuard)
+  @Post('users/unban')
+  public async unbanUser(
+    @Body() dto: BanUserRequestDto,
+  ): Promise<UserResponseDto> {
+    return await this.userService.unbanUser(dto);
   }
 }

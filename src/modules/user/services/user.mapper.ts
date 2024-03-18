@@ -1,20 +1,19 @@
 import { UserEntity } from '../../../database/entities/user.entity';
-import { RoleMapper } from '../../role/services/role.mapper';
 import { UserResponseDto } from '../models/dto/response/user.response.dto';
 
 export class UserMapper {
-  public static toResponseDto(userEntity: UserEntity): UserResponseDto {
+  public static toResponseDto(user: UserEntity): UserResponseDto {
     return {
-      id: userEntity.id,
-      name: userEntity.name,
-      age: userEntity.age,
-      image: userEntity.image,
-      email: userEntity.email,
-      banned: userEntity.banned,
-      banReason: userEntity.banReason,
-      created: userEntity.created,
-      updated: userEntity.updated,
-      role: RoleMapper.toResponseDto(userEntity.role),
+      id: user.id,
+      name: user.name,
+      roleId: user.role_id,
+      age: user.age,
+      image: user.image,
+      email: user.email,
+      banned: user.banned,
+      banReason: user.banReason,
+      created: user.created,
+      updated: user.updated,
     };
   }
 }

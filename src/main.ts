@@ -18,6 +18,7 @@ async function bootstrap() {
       type: 'http',
       scheme: 'bearer',
       bearerFormat: 'JWT',
+
       in: 'header',
     })
     .build();

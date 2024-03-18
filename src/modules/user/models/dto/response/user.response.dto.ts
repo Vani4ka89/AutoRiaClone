@@ -1,5 +1,3 @@
-import { RoleResponseDto } from '../../../../role/models/dto/response/role.response.dto';
-
 export class UserResponseDto {
   id: string;
   name: string;
@@ -10,5 +8,5 @@ export class UserResponseDto {
   banReason: string;
   created: Date;
   updated: Date;
-  role?: RoleResponseDto;
+  roleId: string;
 }

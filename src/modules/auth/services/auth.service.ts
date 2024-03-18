@@ -1,15 +1,17 @@
-import * as process from 'node:process';
-
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { config } from 'dotenv';
 
 import { UserEntity } from '../../../database/entities/user.entity';
+import { EAccountType } from '../../account_type/enums/account-type.enum';
+import { AccountTypeRepository } from '../../repository/services/account-type.repository';
 import { RefreshTokenRepository } from '../../repository/services/refresh-token.repository';
+import { RoleRepository } from '../../repository/services/role.repository';
 import { UserRepository } from '../../repository/services/user.repository';
 import { UserService } from '../../user/services/user.service';
+import { ERoleAccess } from '../enums/roles.enum';
 import { SingInRequestDto } from '../models/dto/request/sing-in.request.dto';
 import { SingUpRequestDto } from '../models/dto/request/sing-up.request.dto';
+import { SingUpAdminRequestDto } from '../models/dto/request/sing-up-admin.request.dto';
 import { AuthUserResponseDto } from '../models/dto/response/auth-user.response.dto';
 import { TokenResponseDto } from '../models/dto/response/token.response.dto';
 import { ITokenPair } from '../types/token.type';
@@ -17,8 +19,6 @@ import { IUserData } from '../types/user-data.type';
 import { AuthMapper } from './auth.mapper';
 import { AuthCacheService } from './auth-cache.service';
 import { TokenService } from './token.service';
-
-config({ path: './environments/.env' });
 
 @Injectable()
 export class AuthService {
@@ -28,15 +28,38 @@ export class AuthService {
     private readonly tokenService: TokenService,
     private readonly refreshTokenRepository: RefreshTokenRepository,
     private readonly authCacheService: AuthCacheService,
+    private readonly roleRepository: RoleRepository,
+    private readonly accountTypeRepository: AccountTypeRepository,
   ) {}
 
-  public async signUp(
-    dto: SingUpRequestDto,
-  ): Promise<Partial<AuthUserResponseDto>> {
+  public async signUpAdmin(
+    dto: SingUpAdminRequestDto,
+  ): Promise<AuthUserResponseDto> {
     await this.userService.isEmailUniqueOrThrow(dto.email);
-    const password = await bcrypt.hash(dto.password, +process.env.SECRET_SALT);
+    const password = await bcrypt.hash(dto.password, 10);
+    const role = await this.roleRepository.save(
+      this.roleRepository.create({ value: ERoleAccess.ADMIN }),
+    );
+    const accountType = await this.accountTypeRepository.save(
+      this.accountTypeRepository.create({ value: EAccountType.PREMIUM }),
+    );
     const user = await this.userRepository.save(
-      this.userRepository.create({ ...dto, password }),
+      this.userRepository.create({ ...dto, password, role, accountType }),
+    );
+    return AuthMapper.toResponseSignUpDto(user);
+  }
+
+  public async signUp(dto: SingUpRequestDto): Promise<AuthUserResponseDto> {
+    await this.userService.isEmailUniqueOrThrow(dto.email);
+    const password = await bcrypt.hash(dto.password, 10);
+    const role = await this.roleRepository.save(
+      this.roleRepository.create({ value: dto.role }),
+    );
+    const accountType = await this.accountTypeRepository.save(
+      this.accountTypeRepository.create({ value: EAccountType.BASE }),
+    );
+    const user = await this.userRepository.save(
+      this.userRepository.create({ ...dto, password, role, accountType }),
     );
     return AuthMapper.toResponseSignUpDto(user);
   }
@@ -69,8 +92,6 @@ export class AuthService {
     return tokens;
   }
 
-  /////////////////////////////////////////////////////////////////////
-
   private async saveAuthTokens(
     userId: string,
     tokens: ITokenPair,
@@ -81,7 +102,7 @@ export class AuthService {
     ]);
   }
 
-  private async removeRefreshTokens(userId: string): Promise<void> {
+  public async removeRefreshTokens(userId: string): Promise<void> {
     await Promise.all([
       this.refreshTokenRepository.delete({
         user_id: userId,

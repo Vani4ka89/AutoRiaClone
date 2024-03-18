@@ -1,5 +1,3 @@
-import process from 'node:process';
-
 import {
   ConflictException,
   Injectable,
@@ -9,11 +7,12 @@ import {
 import * as bcrypt from 'bcrypt';
 
 import { UserEntity } from '../../../database/entities/user.entity';
-import { ERole } from '../../auth/enums/roles.enum';
+import { AuthCacheService } from '../../auth/services/auth-cache.service';
 import { IUserData } from '../../auth/types/user-data.type';
+import { AccountTypeRepository } from '../../repository/services/account-type.repository';
+import { RefreshTokenRepository } from '../../repository/services/refresh-token.repository';
 import { RoleRepository } from '../../repository/services/role.repository';
 import { UserRepository } from '../../repository/services/user.repository';
-import { RoleService } from '../../role/services/role.service';
 import { AddRoleRequestDto } from '../models/dto/request/add-role.request.dto';
 import { BanUserRequestDto } from '../models/dto/request/ban-user.request.dto';
 import { CreateUserRequestDto } from '../models/dto/request/create-user.request.dto';
@@ -24,17 +23,24 @@ import { UserMapper } from './user.mapper';
 @Injectable()
 export class UserService {
   constructor(
+    private readonly authCacheService: AuthCacheService,
     private readonly userRepository: UserRepository,
     private readonly roleRepository: RoleRepository,
-    private readonly roleService: RoleService,
+    private readonly accountTypeRepository: AccountTypeRepository,
+    private readonly refreshTokenRepository: RefreshTokenRepository,
   ) {}
 
   public async createUser(dto: CreateUserRequestDto): Promise<UserResponseDto> {
     await this.isEmailUniqueOrThrow(dto.email);
-    const password = await bcrypt.hash(dto.password, +process.env.SECRET_SALT);
-    const role = await this.roleService.getRoleByValue(ERole.SELLER);
+    const password = await bcrypt.hash(dto.password, 10);
+    const role = await this.roleRepository.save(
+      this.roleRepository.create({ value: dto.role }),
+    );
+    const accountType = await this.accountTypeRepository.save(
+      this.accountTypeRepository.create({ value: dto.accountType }),
+    );
     const user = await this.userRepository.save(
-      this.userRepository.create({ ...dto, password, role }),
+      this.userRepository.create({ ...dto, password, role, accountType }),
     );
     return UserMapper.toResponseDto(user);
   }
@@ -48,23 +54,34 @@ export class UserService {
     useData: IUserData,
     dto: UpdateUserRequestDto,
   ): Promise<UserResponseDto> {
-    const entity = await this.userRepository.findOneBy({ id: useData.userId });
-    await this.userRepository.save(this.userRepository.merge(entity, dto));
-    return UserMapper.toResponseDto(entity);
+    const entity = await this.findByIdOrThrow(useData.userId);
+    const user = await this.userRepository.save(
+      this.userRepository.merge({ ...entity, ...dto }),
+    );
+    return UserMapper.toResponseDto(user);
   }
 
-  public async getProfileById(userId: string): Promise<UserEntity> {
-    await this.findByIdOrThrow(userId);
-    return await this.userRepository.findOne({
-      where: { id: userId },
-      relations: { role: true },
-    });
-    // return UserMapper.toResponseDto(entity);
+  public async deleteMyProfile(useData: IUserData): Promise<void> {
+    const user = await this.findByIdOrThrow(useData.userId);
+    await Promise.all([
+      this.refreshTokenRepository.delete({ user_id: useData.userId }),
+      this.authCacheService.removeToken(useData.userId),
+      this.userRepository.remove(user),
+    ]);
+  }
+
+  public async getProfileById(userId: string): Promise<UserResponseDto> {
+    const user = await this.findByIdOrThrow(userId);
+    return UserMapper.toResponseDto(user);
   }
 
   public async deleteProfile(userId: string): Promise<void> {
     const user = await this.findByIdOrThrow(userId);
-    await this.userRepository.remove(user);
+    await Promise.all([
+      this.refreshTokenRepository.delete({ user_id: userId }),
+      this.authCacheService.removeToken(userId),
+      this.userRepository.remove(user),
+    ]);
   }
 
   public async isEmailUniqueOrThrow(email: string): Promise<void> {
@@ -75,51 +92,53 @@ export class UserService {
   }
 
   public async findByIdOrThrow(userId: string): Promise<UserEntity> {
-    const user = await this.userRepository.findOne({
-      where: {
-        id: userId,
-        // },
-        // relations: {
-        //   roles: true,
-      },
-    });
-    if (!user) {
-      throw new UnprocessableEntityException();
-    }
-    return user;
-  }
-  ////////////////////////////////////////////////////////////////
-
-  // public async addRole(dto: AddRoleRequestDto): Promise<UserEntity> {
-  //   const user = await this.userRepository.findOneBy({ id: dto.userId });
-  //   const role = await this.roleService.getRoleByValue(dto.value);
-  //   if (role && user) {
-  //     user.role.value = dto.value;
-  //     return await this.userRepository.save(user);
-  //   }
-  //   throw new UnprocessableEntityException('User or role not found');
-  // }
-
-  public async addRole(dto: AddRoleRequestDto): Promise<UserResponseDto> {
-    const role = await this.roleRepository.findOneBy({ value: dto.value });
-    if (role) {
-      throw new NotFoundException('Role not found');
-    }
-    const user = await this.userRepository.save(
-      this.userRepository.create({ role }),
-    );
-    return UserMapper.toResponseDto(user);
-  }
-
-  public async banUser(dto: BanUserRequestDto): Promise<UserEntity> {
-    const user = await this.userRepository.findOne({
-      where: { id: dto.userId },
-    });
+    const user = await this.userRepository.findOneBy({ id: userId });
     if (!user) {
       throw new UnprocessableEntityException('User not found');
     }
+    return user;
+  }
+
+  //////////////////////////// GIVE A ROLE //////////////////////////////////
+
+  public async addRole(dto: AddRoleRequestDto): Promise<UserResponseDto> {
+    const entity = await this.userRepository.findOneBy({ id: dto.userId });
+    const role = await this.roleRepository.findOneBy({ id: entity.role_id });
+    if (!entity && !role) {
+      throw new NotFoundException('User or role not found');
+    }
+    role.value = dto.value;
+    const user = await this.userRepository.save({ role });
+    return UserMapper.toResponseDto(user);
+  }
+
+  //////////////////////// BAN A USER AND UNBAN ////////////////////////
+
+  public async banUser(dto: BanUserRequestDto): Promise<UserResponseDto> {
+    const user = await this.userRepository.findOneBy({ id: dto.userId });
+    if (!user) {
+      throw new UnprocessableEntityException('User not found');
+    }
+    if (user.banned === true) {
+      throw new ConflictException('User has already banned');
+    }
     user.banned = true;
     user.banReason = dto.banReason;
-    return await this.userRepository.save(user);
+    const userEntity = await this.userRepository.save(user);
+    return UserMapper.toResponseDto(userEntity);
+  }
+
+  public async unbanUser(dto: BanUserRequestDto): Promise<UserResponseDto> {
+    const user = await this.userRepository.findOneBy({ id: dto.userId });
+    if (!user) {
+      throw new UnprocessableEntityException('User not found');
+    }
+    if (user.banned === false) {
+      throw new ConflictException('User not banned');
+    }
+    user.banned = false;
+    user.banReason = dto.banReason;
+    const userEntity = await this.userRepository.save(user);
+    return UserMapper.toResponseDto(userEntity);
   }
 }

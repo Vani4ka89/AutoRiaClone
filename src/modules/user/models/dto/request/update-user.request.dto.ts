@@ -1,15 +1,13 @@
 import { ApiProperty, PickType } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IsString, Length } from 'class-validator';
+import { IsString, Length, Matches } from 'class-validator';
 
 import { TransformHelper } from '../../../../../common/helpers/transform.helper';
-import { CreateUserRequestDto } from './create-user.request.dto';
+import { BaseUserRequestDto } from './base-user.request.dto';
 
-export class UpdateUserRequestDto extends PickType(CreateUserRequestDto, [
+export class UpdateUserRequestDto extends PickType(BaseUserRequestDto, [
   'age',
   'image',
-  'banned',
-  'banReason',
 ]) {
   @ApiProperty({ example: 'Petro' })
   @IsString()
@@ -17,4 +15,11 @@ export class UpdateUserRequestDto extends PickType(CreateUserRequestDto, [
   @Transform(TransformHelper.trim)
   @Type(() => String)
   name?: string;
+
+  @ApiProperty({ example: 'nika@gmail.com' })
+  @IsString()
+  @Length(5, 30)
+  @Matches(/^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/)
+  @Transform(TransformHelper.trim)
+  email?: string;
 }

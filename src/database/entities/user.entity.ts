@@ -37,13 +37,13 @@ export class UserEntity extends BaseModel {
   cars?: CarEntity[];
 
   @Column()
-  role_id: string;
+  role_id?: string;
   @ManyToOne(() => RoleEntity, (entity) => entity.users)
   @JoinColumn({ name: 'role_id' })
   role?: RoleEntity;
 
   @Column()
-  account_id: string;
+  account_id?: string;
   @ManyToOne(() => AccountTypeEntity, (entity) => entity.users)
   @JoinColumn({ name: 'account_id' })
   accountType?: AccountTypeEntity;
