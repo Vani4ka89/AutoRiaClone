@@ -40,7 +40,7 @@ import { ConfigType, PostgresConfig } from '../../configs/config.type';
             ),
           ],
           synchronize: false,
-          // migrationsRun: true,
+          migrationsRun: true,
         };
       },
       inject: [ConfigService],
