@@ -17,13 +17,11 @@ import {
 } from '@nestjs/swagger';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { Roles } from '../auth/decorators/roles.decorator';
 import { SkipAuth } from '../auth/decorators/skip-auth.decorator';
-import { ERoleAll } from '../auth/enums/roles.enum';
-import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
 import { IUserData } from '../auth/types/user-data.type';
-import { AddRoleRequestDto } from './models/dto/request/add-role.request.dto';
+import { Roles } from '../role/decorators/roles.decorator';
+import { ERoleAll } from '../role/enums/roles.enum';
+import { RolesGuard } from '../role/guards/roles.guard';
 import { BanUserRequestDto } from './models/dto/request/ban-user.request.dto';
 import { CreateUserRequestDto } from './models/dto/request/create-user.request.dto';
 import { UpdateUserRequestDto } from './models/dto/request/update-user.request.dto';
@@ -65,15 +63,6 @@ export class UserController {
     return await this.userService.updateMyProfile(userData, dto);
   }
 
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Delete my profile' })
-  @Delete('me')
-  public async deleteMyProfile(
-    @CurrentUser() userData: IUserData,
-  ): Promise<void> {
-    await this.userService.deleteMyProfile(userData);
-  }
-
   @ApiOperation({ summary: 'Public profile' })
   @SkipAuth()
   @Get('users/:userId')
@@ -92,24 +81,10 @@ export class UserController {
     await this.userService.deleteProfile(userId);
   }
 
-  //////////////////////////// GIVE A ROLE //////////////////////////////////
-
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Give a role (can only admin)' })
-  @ApiResponse({ status: 200 })
-  @Roles(ERoleAll.ADMIN)
-  @UseGuards(JwtAccessGuard, RolesGuard)
-  @Post('users/role')
-  public async addRole(
-    @Body() dto: AddRoleRequestDto,
-  ): Promise<UserResponseDto> {
-    return await this.userService.addRole(dto);
-  }
-
   /////////////////////// BAN A USER AND UNBAN ///////////////////////////
 
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Ban a user (can only admin and manager)' })
+  @ApiOperation({ summary: 'Ban user (can only admin and manager)' })
   @ApiResponse({ status: 200 })
   @Roles(ERoleAll.ADMIN, ERoleAll.MANAGER)
   @UseGuards(RolesGuard)
@@ -121,7 +96,7 @@ export class UserController {
   }
 
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Unban a user (can only admin and manager)' })
+  @ApiOperation({ summary: 'Unban user (can only admin and manager)' })
   @ApiResponse({ status: 200 })
   @Roles(ERoleAll.ADMIN, ERoleAll.MANAGER)
   @UseGuards(RolesGuard)

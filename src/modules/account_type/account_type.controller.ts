@@ -1,30 +1,38 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { IUserData } from '../auth/types/user-data.type';
-import { AccountTypeService } from './services/account_type.service';
-import { CreateAccountTypeRequestDto } from './models/dto/request/create-account-type.request.dto';
+import { AccountTypeEntity } from '../../database/entities/account-type.entity';
+import { Roles } from '../role/decorators/roles.decorator';
+import { ERoleAll } from '../role/enums/roles.enum';
+import { RolesGuard } from '../role/guards/roles.guard';
+import { UpdateAccountTypeRequestDto } from './models/dto/request/update-account-type.request.dto';
 import { AccountTypeResponseDto } from './models/dto/response/account-type.response.dto';
+import { AccountTypeService } from './services/account_type.service';
 
 @ApiTags('Account-type')
 @Controller('account-type')
 export class AccountTypeController {
   constructor(private readonly accountTypeService: AccountTypeService) {}
 
-  @Post()
-  public async createType(
-    @Body() dto: CreateAccountTypeRequestDto,
-    @CurrentUser() userData: IUserData,
-  ): Promise<AccountTypeResponseDto> {
-    return await this.accountTypeService.createType(dto, userData);
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get account-type (for admin only)' })
+  @Roles(ERoleAll.ADMIN)
+  @UseGuards(RolesGuard)
+  @Get(':value')
+  public async findTypeByValue(
+    @Param('value') value: string,
+  ): Promise<AccountTypeEntity[]> {
+    return await this.accountTypeService.findTypeByValue(value);
   }
 
-  @Get(':typeId')
-  public async findById(
-    @Param('typeId') typeId: string,
-    @CurrentUser() userData: IUserData,
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Change account-type (for admin only)' })
+  @Roles(ERoleAll.ADMIN)
+  @UseGuards(RolesGuard)
+  @Post('change')
+  public async changeAccountType(
+    @Body() dto: UpdateAccountTypeRequestDto,
   ): Promise<AccountTypeResponseDto> {
-    return await this.accountTypeService.findById(typeId, userData);
+    return await this.accountTypeService.changeAccountType(dto);
   }
 }

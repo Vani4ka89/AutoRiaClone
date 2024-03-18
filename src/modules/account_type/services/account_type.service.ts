@@ -1,9 +1,9 @@
-import { Injectable, UnprocessableEntityException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
-import { IUserData } from '../../auth/types/user-data.type';
+import { AccountTypeEntity } from '../../../database/entities/account-type.entity';
 import { AccountTypeRepository } from '../../repository/services/account-type.repository';
 import { UserService } from '../../user/services/user.service';
-import { CreateAccountTypeRequestDto } from '../models/dto/request/create-account-type.request.dto';
+import { UpdateAccountTypeRequestDto } from '../models/dto/request/update-account-type.request.dto';
 import { AccountTypeResponseDto } from '../models/dto/response/account-type.response.dto';
 import { AccountTypeMapper } from './account-type.mapper';
 
@@ -14,31 +14,25 @@ export class AccountTypeService {
     private readonly accountTypeRepository: AccountTypeRepository,
   ) {}
 
-  public async createType(
-    dto: CreateAccountTypeRequestDto,
-    userData: IUserData,
-  ): Promise<AccountTypeResponseDto> {
-    const user = await this.userService.getProfileById(userData.userId);
-    if (!user) {
-      throw new UnprocessableEntityException('User not found');
-    }
-    const accountType = await this.accountTypeRepository.save(
-      this.accountTypeRepository.create({ ...dto }),
-    );
-    return AccountTypeMapper.toResponseDto(accountType);
+  public async findTypeByValue(value: string): Promise<AccountTypeEntity[]> {
+    return await this.accountTypeRepository.find({
+      where: { value },
+    });
   }
 
-  public async findById(
-    typeId: string,
-    userData: IUserData,
+  public async changeAccountType(
+    dto: UpdateAccountTypeRequestDto,
   ): Promise<AccountTypeResponseDto> {
-    const user = await this.userService.getProfileById(userData.userId);
-    if (!user) {
-      throw new UnprocessableEntityException('User not found');
-    }
-    const accountType = await this.accountTypeRepository.findOne({
-      where: { id: typeId },
+    const user = await this.userService.findByIdOrThrow(dto.userId);
+    const accountType = await this.accountTypeRepository.findOneBy({
+      id: user.account_id,
     });
-    return AccountTypeMapper.toResponseDto(accountType);
+    if (!user && !accountType) {
+      throw new NotFoundException('User or role not found');
+    }
+    accountType.value = dto.value;
+    accountType.description = dto.description;
+    const entity = await this.accountTypeRepository.save(accountType);
+    return AccountTypeMapper.toResponseDto(entity);
   }
 }

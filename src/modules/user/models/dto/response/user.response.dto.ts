@@ -8,5 +8,4 @@ export class UserResponseDto {
   banReason: string;
   created: Date;
   updated: Date;
-  roleId: string;
 }

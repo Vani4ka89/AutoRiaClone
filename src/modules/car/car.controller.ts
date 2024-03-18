@@ -6,12 +6,17 @@ import {
   Param,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { SkipAuth } from '../auth/decorators/skip-auth.decorator';
+import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
 import { IUserData } from '../auth/types/user-data.type';
+import { Roles } from '../role/decorators/roles.decorator';
+import { ERoleAll } from '../role/enums/roles.enum';
+import { RolesGuard } from '../role/guards/roles.guard';
 import { CreateCarRequestDto } from './models/dto/request/create-car.request.dto';
 import { UpdateCarRequestDto } from './models/dto/request/update-car.request.dto';
 import { CarResponseDto } from './models/dto/response/car.response.dto';
@@ -23,7 +28,11 @@ export class CarController {
   constructor(private readonly carService: CarService) {}
 
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create car advertisement' })
+  @Roles(ERoleAll.ADMIN, ERoleAll.MANAGER, ERoleAll.SELLER)
+  @UseGuards(JwtAccessGuard, RolesGuard)
+  @ApiOperation({
+    summary: 'Create car advertisement (Only for admin, manager, seller)',
+  })
   @Post()
   public async createCarAd(
     @Body() dto: CreateCarRequestDto,
@@ -42,7 +51,11 @@ export class CarController {
   }
 
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get my car advertisement' })
+  @ApiOperation({
+    summary: 'Get my car advertisement (Only for admin, manager, seller)',
+  })
+  @Roles(ERoleAll.ADMIN, ERoleAll.MANAGER, ERoleAll.SELLER)
+  @UseGuards(JwtAccessGuard, RolesGuard)
   @Get('me')
   public async findMyAd(
     @CurrentUser() userData: IUserData,
@@ -51,7 +64,11 @@ export class CarController {
   }
 
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update my car advertisement' })
+  @ApiOperation({
+    summary: 'Update my car advertisement (Only for admin, manager, seller)',
+  })
+  @Roles(ERoleAll.ADMIN, ERoleAll.MANAGER, ERoleAll.SELLER)
+  @UseGuards(JwtAccessGuard, RolesGuard)
   @Put('me')
   public async editMyAd(
     @Body() dto: UpdateCarRequestDto,
@@ -61,7 +78,11 @@ export class CarController {
   }
 
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Delete car advertisement' })
+  @ApiOperation({
+    summary: 'Delete car advertisement (Only for admin, manager, seller)',
+  })
+  @Roles(ERoleAll.ADMIN, ERoleAll.MANAGER, ERoleAll.SELLER)
+  @UseGuards(JwtAccessGuard, RolesGuard)
   @Delete(':carId')
   public async removeMyAd(
     @Param('carId') carId: string,

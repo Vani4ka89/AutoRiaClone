@@ -7,8 +7,8 @@ import { AccountTypeRepository } from '../../repository/services/account-type.re
 import { RefreshTokenRepository } from '../../repository/services/refresh-token.repository';
 import { RoleRepository } from '../../repository/services/role.repository';
 import { UserRepository } from '../../repository/services/user.repository';
+import { ERoleAccess } from '../../role/enums/roles.enum';
 import { UserService } from '../../user/services/user.service';
-import { ERoleAccess } from '../enums/roles.enum';
 import { SingInRequestDto } from '../models/dto/request/sing-in.request.dto';
 import { SingUpRequestDto } from '../models/dto/request/sing-up.request.dto';
 import { SingUpAdminRequestDto } from '../models/dto/request/sing-up-admin.request.dto';

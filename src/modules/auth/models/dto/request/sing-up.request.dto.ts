@@ -2,10 +2,10 @@ import { ApiProperty, PickType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsEnum, IsString } from 'class-validator';
 
-import { CreateUserRequestDto } from '../../../../user/models/dto/request/create-user.request.dto';
-import { ERoleSimple } from '../../../enums/roles.enum';
+import { ERoleSimple } from '../../../../role/enums/roles.enum';
+import { BaseUserRequestDto } from '../../../../user/models/dto/request/base-user.request.dto';
 
-export class SingUpRequestDto extends PickType(CreateUserRequestDto, [
+export class SingUpRequestDto extends PickType(BaseUserRequestDto, [
   'name',
   'email',
   'password',

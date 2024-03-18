@@ -14,7 +14,7 @@ import {
 
 import { TransformHelper } from '../../../../../common/helpers/transform.helper';
 import { EAccountType } from '../../../../account_type/enums/account-type.enum';
-import { ERoleAll } from '../../../../auth/enums/roles.enum';
+import { ERoleAll } from '../../../../role/enums/roles.enum';
 
 export class BaseUserRequestDto {
   @ApiProperty({ example: 'Nika' })

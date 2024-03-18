@@ -28,9 +28,9 @@ export class RolesGuard implements CanActivate {
         return true;
       }
       const { user } = context.switchToHttp().getRequest();
-      const userEntity = await this.userService.getProfileById(user.userId);
+      const userEntity = await this.userService.findByIdOrThrow(user.userId);
       const role = await this.roleRepository.findOneBy({
-        id: userEntity.roleId,
+        id: userEntity.role_id,
       });
       return requiredRoles.includes(role.value);
     } catch (e) {

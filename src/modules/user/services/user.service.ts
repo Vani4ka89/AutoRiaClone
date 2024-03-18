@@ -1,7 +1,6 @@
 import {
   ConflictException,
   Injectable,
-  NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
@@ -13,7 +12,6 @@ import { AccountTypeRepository } from '../../repository/services/account-type.re
 import { RefreshTokenRepository } from '../../repository/services/refresh-token.repository';
 import { RoleRepository } from '../../repository/services/role.repository';
 import { UserRepository } from '../../repository/services/user.repository';
-import { AddRoleRequestDto } from '../models/dto/request/add-role.request.dto';
 import { BanUserRequestDto } from '../models/dto/request/ban-user.request.dto';
 import { CreateUserRequestDto } from '../models/dto/request/create-user.request.dto';
 import { UpdateUserRequestDto } from '../models/dto/request/update-user.request.dto';
@@ -61,15 +59,6 @@ export class UserService {
     return UserMapper.toResponseDto(user);
   }
 
-  public async deleteMyProfile(useData: IUserData): Promise<void> {
-    const user = await this.findByIdOrThrow(useData.userId);
-    await Promise.all([
-      this.refreshTokenRepository.delete({ user_id: useData.userId }),
-      this.authCacheService.removeToken(useData.userId),
-      this.userRepository.remove(user),
-    ]);
-  }
-
   public async getProfileById(userId: string): Promise<UserResponseDto> {
     const user = await this.findByIdOrThrow(userId);
     return UserMapper.toResponseDto(user);
@@ -99,19 +88,6 @@ export class UserService {
     return user;
   }
 
-  //////////////////////////// GIVE A ROLE //////////////////////////////////
-
-  public async addRole(dto: AddRoleRequestDto): Promise<UserResponseDto> {
-    const entity = await this.userRepository.findOneBy({ id: dto.userId });
-    const role = await this.roleRepository.findOneBy({ id: entity.role_id });
-    if (!entity && !role) {
-      throw new NotFoundException('User or role not found');
-    }
-    role.value = dto.value;
-    const user = await this.userRepository.save({ role });
-    return UserMapper.toResponseDto(user);
-  }
-
   //////////////////////// BAN A USER AND UNBAN ////////////////////////
 
   public async banUser(dto: BanUserRequestDto): Promise<UserResponseDto> {
@@ -124,8 +100,8 @@ export class UserService {
     }
     user.banned = true;
     user.banReason = dto.banReason;
-    const userEntity = await this.userRepository.save(user);
-    return UserMapper.toResponseDto(userEntity);
+    const updatedUser = await this.userRepository.save(user);
+    return UserMapper.toResponseDto(updatedUser);
   }
 
   public async unbanUser(dto: BanUserRequestDto): Promise<UserResponseDto> {
@@ -138,7 +114,7 @@ export class UserService {
     }
     user.banned = false;
     user.banReason = dto.banReason;
-    const userEntity = await this.userRepository.save(user);
-    return UserMapper.toResponseDto(userEntity);
+    const updatedUser = await this.userRepository.save(user);
+    return UserMapper.toResponseDto(updatedUser);
   }
 }
